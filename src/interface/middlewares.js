@@ -1,4 +1,4 @@
-import {jwtDecode} from "../infrastructure/utils/jwt.js";
+import {jwtDecode} from "../utils/jwt.js";
 import UserRepository from "../infrastructure/repositories/user-repository.js";
 
 const isAuth = async (req, res, next) => {

@@ -1,5 +1,5 @@
-import {hashPassword, validatePassword} from "../../infrastructure/utils/bcrypt.js";
-import {jwtEncode} from "../../infrastructure/utils/jwt.js";
+import {hashPassword, validatePassword} from "../../utils/bcrypt.js";
+import {jwtEncode} from "../../utils/jwt.js";
 
 class UserController {
     constructor(userRepository, redisRepository) {
