@@ -1,5 +1,10 @@
 import mongoose from 'mongoose';
 
+const Role = {
+    Admin: 'admin',
+    Client: 'client',
+};
+
 const UserSchema = new mongoose.Schema({
     firstName: {
         type: String,
@@ -33,6 +38,7 @@ const UserSchema = new mongoose.Schema({
         required: true,
         minlength: [6, 'Password must be at least 6 characters'],
     },
+    role: {type: String, enum: Object.values(Role), required: true, default: Role.Client},
 }, {timestamps: true});
 
 const UserModel = mongoose.model('User', UserSchema);
