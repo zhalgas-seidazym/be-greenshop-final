@@ -13,8 +13,7 @@ const router = Router();
 const userController = new UserController(new UserRepository());
 const passwordController = new PasswordController(new UserRepository(), new RedisService(), new EmailService(),);
 
-router.post('/sign-in',
-    /*
+router.post('/sign-in', /*
      #swagger.tags = ['users']
      #swagger.parameters['body'] = {
          in: 'body',
@@ -26,11 +25,9 @@ router.post('/sign-in',
          }
      }
     */
-    (req, res) => userController.signIn(req, res)
-);
+    (req, res) => userController.signIn(req, res));
 
-router.post('/sign-up',
-    /*
+router.post('/sign-up', /*
      #swagger.tags = ['users']
      #swagger.parameters['body'] = {
          in: 'body',
@@ -45,19 +42,14 @@ router.post('/sign-up',
          }
      }
     */
-    (req, res) => userController.signUp(req, res)
-);
+    (req, res) => userController.signUp(req, res));
 
-router.get("/me",
-    isAuth,
-    /*
+router.get("/me", isAuth, /*
      #swagger.tags = ['users']
     */
     (req, res) => userController.profile(req, res))
 
-router.put(
-    '/update-profile',
-    /*
+router.put('/update-profile', /*
      #swagger.tags = ['users']
      #swagger.parameters['body'] = {
          in: 'body',
@@ -74,27 +66,31 @@ router.put(
          }
      }
     */
-    upload.single('profilePicture'),
-    async (req, res) => {
+    upload.single('profilePicture'), async (req, res) => {
         try {
             await userController.update_profile(req, res);
         } catch (error) {
             console.error('Unexpected Error:', error);
             res.status(500).json({detail: 'An unexpected error occurred.'});
         }
-    }
-);
+    });
 
 router.post('/reset-password/initiate',
-    async (req, res) => passwordController.initiatePasswordReset(req, res)
-);
+    /*
+     #swagger.tags = ['users']
+    */
+    async (req, res) => passwordController.initiatePasswordReset(req, res));
 
 router.get('/reset-password/validate-token',
-    async (req, res) => passwordController.validateResetToken(req, res)
-);
+    /*
+     #swagger.tags = ['users']
+    */
+    async (req, res) => passwordController.validateResetToken(req, res));
 
 router.post('/reset-password/reset',
-    async (req, res) => passwordController.resetPassword(req, res)
-);
+    /*
+     #swagger.tags = ['users']
+    */
+    async (req, res) => passwordController.resetPassword(req, res));
 
 export default router;
