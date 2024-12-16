@@ -2,9 +2,8 @@ import {hashPassword, validatePassword} from "../../utils/bcrypt.js";
 import {jwtEncode} from "../../utils/jwt.js";
 
 class UserController {
-    constructor(userRepository, redisRepository) {
+    constructor(userRepository) {
         this.userRepository = userRepository;
-        this.redisRepository = redisRepository;
     }
 
     async signIn(req, res) {
@@ -14,7 +13,8 @@ class UserController {
             if (!dbUser) {
                 return res.status(401).send({"detail": "User Not Found"});
             }
-            if (!validatePassword(password, dbUser.password)) {
+            const isPasswordValid = await validatePassword(password, dbUser.password);
+            if (!isPasswordValid) {
                 return res.status(401).send({"detail": "Password is incorrect"});
             }
 
@@ -30,7 +30,7 @@ class UserController {
     }
 
     async signUp(req, res) {
-        const {firstName, lastName, email, password} = req.body;
+        const {firstName, lastName, email, password, client} = req.body;
         try {
             let existingUser = await this.userRepository.findByEmail(email);
             if (existingUser) {
@@ -38,7 +38,7 @@ class UserController {
             }
 
             const hashedPassword = await hashPassword(password);
-            const newUser = {firstName, lastName, email, password: hashedPassword};
+            const newUser = {firstName, lastName, email, client, password: hashedPassword};
 
             const createdUser = await this.userRepository.create(newUser);
 
@@ -53,39 +53,6 @@ class UserController {
         }
     }
 
-    async forgetPassword(req, res) {
-        const {email} = req.body;
-        try {
-            const existingUser = await this.userRepository.findByEmail(email);
-            if (!existingUser) {
-                return res.status(404).send({"detail": "User not found"});
-            }
-
-            // TODO: Implement the logic for sending a reset OTP/email here
-
-            return res.status(200).send({"detail": "Reset instructions sent"});
-        } catch (err) {
-            return res.status(500).send({"detail": "Internal Server Error"});
-        }
-    }
-
-    async verifyOtp(req, res) {
-        const {code} = req.body;
-        try {
-            const otp = await this.redisRepository.get(code);
-            if (!otp) {
-                return res.status(404).send({"detail": "Expired or not found"});
-            }
-
-            // TODO: Implement OTP verification logic and password reset flow here
-
-            return res.status(200).send({"detail": "OTP verified successfully"});
-        } catch (err) {
-            return res.status(500).send({"detail": "Internal Server Error"});
-        }
-    }
-
-
     async profile(req, res) {
         const user = req.user;
 
@@ -99,6 +66,45 @@ class UserController {
             });
         } catch (err) {
             return res.status(500).send({"detail": "Internal Server Error"});
+        }
+    }
+
+    async update_profile(req, res) {
+        const {firstName, lastName, phoneNumber, email, currentPassword, password} = req.body;
+        const profilePicture = req.file ? req.file.path : null;
+        const user = req.user;
+
+        try {
+            const newData = {
+                firstName: firstName || user.firstName,
+                lastName: lastName || user.lastName,
+                phoneNumber: phoneNumber || user.phoneNumber,
+                email: email || user.email,
+                ...(profilePicture && {photoURL: profilePicture}),
+            };
+
+            if (password) {
+                if (!await validatePassword(currentPassword, user.password)) {
+                    return res.status(400).send({detail: "Password is incorrect"});
+                }
+                newData.password = await hashPassword(password);
+            }
+
+            const updatedUser = await this.userRepository.update(user.id, newData);
+
+            if (!updatedUser) {
+                return res.status(404).send({detail: "User not found"});
+            }
+
+            return res.status(200).send({detail: "Profile updated", user: updatedUser});
+        } catch (err) {
+            console.error(err);
+
+            if (err.name === "ValidationError") {
+                return res.status(400).send({detail: "Invalid data", errors: err.errors});
+            }
+
+            return res.status(500).send({detail: "Internal Server Error"});
         }
     }
 }

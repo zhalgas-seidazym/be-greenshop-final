@@ -1,6 +1,6 @@
 import connectToRedis from "../database/redis.js";
 
-class RedisRepository {
+class RedisService {
     constructor() {
         this.client = null;
     }
@@ -16,7 +16,7 @@ class RedisRepository {
         return await this.client.get(key);
     }
 
-    async set(key, value, expiry = 3600) {
+    async set(key, value, expiry = 300) {
         await this.init();
         return await this.client.set(key, value, {
             EX: expiry,
@@ -34,4 +34,4 @@ class RedisRepository {
     }
 }
 
-export default RedisRepository;
+export default RedisService;

@@ -1,13 +1,17 @@
 import {Router} from 'express';
 import UserController from "../controllers/user-controller.js";
 import UserRepository from "../../infrastructure/repositories/user-repository.js";
-import RedisRepository from "../../infrastructure/repositories/redis-repository.js";
 import {isAuth} from "../middlewares.js";
+import upload from "../../utils/multer.js";
+import PasswordController from "../controllers/password-controller.js";
+import RedisService from "../../infrastructure/services/redis-service.js";
+import EmailService from "../../infrastructure/services/email-service.js";
 
 const router = Router();
 
 
-const userController = new UserController(new UserRepository(), new RedisRepository());
+const userController = new UserController(new UserRepository());
+const passwordController = new PasswordController(new UserRepository(), new RedisService(), new EmailService(),);
 
 router.post('/sign-in',
     /*
@@ -36,7 +40,8 @@ router.post('/sign-up',
              firstName: "Dimash",
              lastName: "Zhalgas",
              email: "zhalgas@gmail.com",
-             password: "12345678"
+             password: "12345678",
+             client: "client"
          }
      }
     */
@@ -49,4 +54,47 @@ router.get("/me",
      #swagger.tags = ['users']
     */
     (req, res) => userController.profile(req, res))
+
+router.put(
+    '/update-profile',
+    /*
+     #swagger.tags = ['users']
+     #swagger.parameters['body'] = {
+         in: 'body',
+         description: 'User data.',
+         required: true,
+         schema: {
+             firstName: "Dimash",
+             lastName: "Zhalgas",
+             phoneNumber: "+77761856565",
+             email: "zhalgas@gmail.com",
+             currentPassword: "1234567878",
+             password: "12345678",
+             profilePicture: "This upload from postman"
+         }
+     }
+    */
+    upload.single('profilePicture'),
+    async (req, res) => {
+        try {
+            await userController.update_profile(req, res);
+        } catch (error) {
+            console.error('Unexpected Error:', error);
+            res.status(500).json({detail: 'An unexpected error occurred.'});
+        }
+    }
+);
+
+router.post('/reset-password/initiate',
+    async (req, res) => passwordController.initiatePasswordReset(req, res)
+);
+
+router.get('/reset-password/validate-token',
+    async (req, res) => passwordController.validateResetToken(req, res)
+);
+
+router.post('/reset-password/reset',
+    async (req, res) => passwordController.resetPassword(req, res)
+);
+
 export default router;

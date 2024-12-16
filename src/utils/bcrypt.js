@@ -1,10 +1,10 @@
 import bcrypt from 'bcrypt';
 
-const hashPassword = (password) => {
+const hashPassword = async (password) => {
     return bcrypt.hash(password.toString(), 10);
 };
 
-const validatePassword = (password, hashedPassword) => {
+const validatePassword = async (password, hashedPassword) => {
     return bcrypt.compare(password, hashedPassword);
 };
 
