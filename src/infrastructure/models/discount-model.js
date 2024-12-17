@@ -5,8 +5,7 @@ const DiscountSchema = new Schema(
         item: {type: Schema.Types.ObjectId, ref: "Item", required: true},
         discountPercentage: {type: Number, required: true, min: 0, max: 100},
         startDate: {type: Date, required: true},
-        endDate: {type: Date, required: true},
-        isActive: {type: Boolean, default: true},
+        endDate: {type: Date, required: true}
     },
     {
         timestamps: true,
@@ -14,4 +13,4 @@ const DiscountSchema = new Schema(
 );
 
 const DiscountModel = mongoose.model("Discount", DiscountSchema);
-module.exports = DiscountModel;
+export default DiscountModel;

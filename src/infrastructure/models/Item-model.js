@@ -14,7 +14,7 @@ const ItemSchema = new Schema({
     cost: {type: Number, required: true},
     size: {type: String, enum: Object.values(ItemSize), required: true, default: ItemSize.S},
     sku: {type: String, required: true, unique: true},
-    categories: [{type: Schema.Types.ObjectId, ref: "Category", required: true}],
+    categories: [{type: Schema.Types.ObjectId, ref: "Category", required: true,}],
     tags: [{type: String, required: true}],
     productDescription: {type: String, required: true},
     relatedProducts: [{type: Schema.Types.ObjectId, ref: "Item"}]

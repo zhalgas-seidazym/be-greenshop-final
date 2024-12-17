@@ -39,6 +39,10 @@ const UserSchema = new mongoose.Schema({
         minlength: [6, 'Password must be at least 6 characters'],
     },
     role: {type: String, enum: Object.values(Role), required: true, default: Role.Client},
+    verifiedUser: {
+        type: Boolean,
+        default: false,
+    }
 }, {timestamps: true});
 
 const UserModel = mongoose.model('User', UserSchema);

@@ -10,8 +10,12 @@ import EmailService from "../../infrastructure/services/email-service.js";
 const router = Router();
 
 
-const userController = new UserController(new UserRepository());
-const passwordController = new PasswordController(new UserRepository(), new RedisService(), new EmailService(),);
+const userRepository = new UserRepository()
+const redisService = new RedisService();
+const emailService = new EmailService();
+
+const userController = new UserController(new UserRepository(), redisService, emailService);
+const passwordController = new PasswordController(userRepository, redisService, emailService);
 
 router.post('/sign-in', /*
      #swagger.tags = ['users']
@@ -44,7 +48,27 @@ router.post('/sign-up', /*
     */
     (req, res) => userController.signUp(req, res));
 
-router.get("/me", isAuth, /*
+router.post('/verify-email', /*
+     #swagger.tags = ['users']
+     #swagger.parameters['body'] = {
+         in: 'body',
+         description: 'User data.',
+         required: true,
+         schema: {
+             email: "arystambekdimash005@gmail.com",
+         }
+     }
+    */
+    (req, res) => userController.sendVerificationToEmail(req, res));
+
+router.get('/verify-email', /*
+     #swagger.tags = ['users']
+    */
+    (req, res) => userController.validateVerifyToken(req, res));
+
+
+router.get("/me", isAuth,
+    /*
      #swagger.tags = ['users']
     */
     (req, res) => userController.profile(req, res))
