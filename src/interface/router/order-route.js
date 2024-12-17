@@ -2,7 +2,6 @@ import {Router} from 'express';
 import OrderController from "../controllers/order-controller.js";
 import OrderRepository from "../../infrastructure/repositories/order-repository.js";
 import ItemRepository from "../../infrastructure/repositories/item-repository.js";
-import DiscountRepository from "../../infrastructure/repositories/discount-repository.js";
 import {isAdmin, isAuth} from "../middlewares.js";
 import {query, validationResult} from 'express-validator';
 import ShippingAddressRepository from "../../infrastructure/repositories/shipping-address-repository.js";
@@ -12,9 +11,8 @@ const router = Router();
 const orderRepository = new OrderRepository();
 const addressRepository = new ShippingAddressRepository();
 const itemRepository = new ItemRepository();
-const discountRepository = new DiscountRepository();
 
-const orderController = new OrderController(orderRepository, addressRepository, itemRepository, discountRepository);
+const orderController = new OrderController(orderRepository, addressRepository, itemRepository);
 
 const validateListAllOrders = [
     query('page').optional().isInt({min: 1}).withMessage('Page must be a positive integer'),
@@ -33,7 +31,7 @@ const validateListAllOrders = [
     }
 ];
 
-router.post('/orders', isAuth,
+router.post('/', isAuth,
     /*
         #swagger.tags = ['orders']
         #swagger.parameters['body'] = {
@@ -55,7 +53,7 @@ router.post('/orders', isAuth,
     (req, res) => orderController.createOrder(req, res)
 );
 
-router.get('/orders', isAuth,
+router.get('/', isAuth,
     /*
         #swagger.tags = ['orders']
         #swagger.parameters['query'] = {
@@ -76,7 +74,7 @@ router.get('/orders', isAuth,
     (req, res) => orderController.listUserOrders(req, res)
 );
 
-router.get('/orders/:id', isAuth,
+router.get('/:id', isAuth,
     /*
         #swagger.tags = ['orders']
         #swagger.parameters['id'] = {
@@ -89,7 +87,7 @@ router.get('/orders/:id', isAuth,
     (req, res) => orderController.getOrderById(req, res)
 );
 
-router.delete('/orders/:id', isAuth,
+router.delete('/:id', isAuth,
     /*
         #swagger.tags = ['orders']
         #swagger.parameters['id'] = {
@@ -102,7 +100,7 @@ router.delete('/orders/:id', isAuth,
     (req, res) => orderController.cancelOrder(req, res)
 );
 
-router.get('/all', isAuth, isAdmin, validateListAllOrders,
+router.get('/orders/all', isAuth, isAdmin, validateListAllOrders,
     /*
         #swagger.tags = ['orders']
         #swagger.parameters['query'] = {

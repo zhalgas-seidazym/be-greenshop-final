@@ -6,10 +6,12 @@ const WishlistSchema = new Schema({
         ref: "User",
         required: true,
     },
-    item: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Item',
-    },
+    items: [{
+        item: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Item',
+        }
+    }],
 }, {
     timestamps: true
 });

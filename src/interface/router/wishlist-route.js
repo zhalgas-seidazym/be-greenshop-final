@@ -12,17 +12,6 @@ router.use(isAuth);
 
 router.post("/add",  /*
     #swagger.tags = ['wishlist']
-    #swagger.parameters['body'] = {
-        in: 'body',
-        description: 'Add item to wishlist',
-        required: true,
-        schema: {
-            type: 'object',
-            properties: {
-                itemId: { type: 'string' }
-            }
-        }
-    }
 */ (req, res) => wishlistController.addItemToWishlist(req, res));
 
 router.get("/",  /*
@@ -31,17 +20,6 @@ router.get("/",  /*
 
 router.delete("/remove",  /*
     #swagger.tags = ['wishlist']
-    #swagger.parameters['body'] = {
-        in: 'body',
-        description: 'Remove item from wishlist',
-        required: true,
-        schema: {
-            type: 'object',
-            properties: {
-                itemId: { type: 'string' }
-            }
-        }
-    }
 */ (req, res) => wishlistController.removeItemFromWishlist(req, res));
 
 router.delete("/clear",  /*

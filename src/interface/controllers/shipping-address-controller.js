@@ -55,6 +55,7 @@ class ShippingAddressController {
             }
 
             const simplifiedAddresses = addresses.map(address => ({
+                id: address._id,
                 name: address.name,
                 street: address.street,
                 apartment: address.apartment,
@@ -62,7 +63,7 @@ class ShippingAddressController {
                 country: address.country,
             }));
 
-            return res.status(200).json({addresses: simplifiedAddresses});
+            return res.status(200).json(simplifiedAddresses);
         } catch (err) {
             console.error(err);
             return res.status(500).json({detail: "Internal Server Error"});

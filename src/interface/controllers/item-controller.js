@@ -1,12 +1,13 @@
 class ItemController {
-    constructor(itemRepository, discountRepository) {
+    constructor(itemRepository, reviewRepository, userRepository) {
         this.itemRepository = itemRepository;
-        this.discountRepository = discountRepository;
+        this.reviewRepository = reviewRepository;
+        this.userRepository = userRepository;
+
     }
 
     async createItem(req, res) {
         const {
-            images,
             title,
             shortDescription,
             cost,
@@ -18,9 +19,13 @@ class ItemController {
             relatedProducts
         } = req.body;
 
+        const images = req.files ? req.files.map(file => file.path) : [];
+
         try {
             const existingItem = await this.itemRepository.findBySku(sku);
-            if (existingItem) return res.status(400).send({detail: "SKU already exists"});
+            if (existingItem) {
+                return res.status(400).send({detail: "SKU already exists"});
+            }
 
             const newItem = await this.itemRepository.create({
                 images,
@@ -50,20 +55,20 @@ class ItemController {
                 maxPrice = null,
                 size = null,
                 sortBy = null,
-                filter = false
+                filter = false,
+                page = 1,
+                limit = 10
             } = req.query || {};
-
             const priceFilters = {};
             if (minPrice && !isNaN(parseFloat(minPrice))) priceFilters.minPrice = parseFloat(minPrice);
             if (maxPrice && !isNaN(parseFloat(maxPrice))) priceFilters.maxPrice = parseFloat(maxPrice);
 
             let filterQuery = {};
             let sortOption = {};
-
             if (filter === 'true' || filter === true) {
                 if (category) filterQuery.categories = category;
 
-                if (priceFilters.minPrice !== undefined && priceFilters.maxPrice !== undefined) {
+                if (priceFilters.minPrice !== null && priceFilters.maxPrice !== null) {
                     filterQuery.cost = {$gte: priceFilters.minPrice, $lte: priceFilters.maxPrice};
                 } else if (priceFilters.minPrice !== undefined) {
                     filterQuery.cost = {$gte: priceFilters.minPrice};
@@ -83,51 +88,35 @@ class ItemController {
                     case "new-arrivals":
                         sortOption = {createdAt: -1};
                         break;
-                    case "sale":
-                        sortOption = {discountPercentage: -1};
-                        break;
                     default:
                         sortOption = {};
                 }
             }
 
-            let items;
-            if (filter === 'true' || filter === true) {
-                items = await this.itemRepository.getItemsWithDiscounts(filterQuery, sortOption);
-            } else {
-                items = await this.itemRepository.findWithCategoryAndTags();
-            }
+            const items = await this.itemRepository.findWithCategoryAndTags(filterQuery, sortOption, page, limit);
 
-            return res.status(200).json(items);
+            const formattedItems = await Promise.all(items.map(async (item) => {
+                const reviews = await this.reviewRepository.findByItemId(item._id);
+                const reviewsCount = reviews.length;
+                const averageRating = reviewsCount > 0
+                    ? parseFloat((reviews.reduce((sum, review) => sum + review.rating, 0) / reviewsCount).toFixed(2))
+                    : 0;
+
+                return {
+                    id: item._id,
+                    title: item.title,
+                    cost: item.cost,
+                    image: item.images.length > 0 ? item.images[0] : null,
+                    reviewsCount: reviewsCount,
+                    averageRating: averageRating
+                };
+            }));
+
+            return res.status(200).json(formattedItems);
         } catch (err) {
             console.error(err);
             return res.status(500).json({detail: "Internal Server Error"});
         }
-    }
-
-
-    async applyDiscounts(items) {
-        const itemIds = items.map((item) => item._id);
-        const discounts = await this.discountRepository.findDiscountsByItemIds(itemIds);
-
-        const discountMap = {};
-        discounts.forEach((discount) => {
-            discountMap[discount.item.toString()] = discount;
-        });
-
-        return items.map((item) => {
-            const discount = discountMap[item._id.toString()];
-            if (discount) {
-                const discountedPrice = item.cost - (item.cost * discount.discountPercentage) / 100;
-                return {
-                    ...item.toObject(),
-                    originalCost: item.cost,
-                    discountPercentage: discount.discountPercentage,
-                    discountedCost: discountedPrice.toFixed(2),
-                };
-            }
-            return item;
-        });
     }
 
     async getItemById(req, res) {
@@ -136,7 +125,46 @@ class ItemController {
         try {
             const item = await this.itemRepository.findByIdWithRelatedProducts(id);
             if (!item) return res.status(404).send({detail: "Item not found"});
-            return res.status(200).send({item});
+
+            const reviews = await this.reviewRepository.findByItemId(id);
+            let newData = JSON.parse(JSON.stringify(item));
+            newData.reviewsCount = reviews.length;
+            if (reviews.length > 0) {
+                const averageRating = reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
+                newData.averageRating = parseFloat(averageRating.toFixed(2));
+            } else {
+                newData.averageRating = 0;
+            }
+
+            return res.status(200).send(newData);
+        } catch (err) {
+            console.error(err);
+            return res.status(500).send({detail: "Internal Server Error"});
+        }
+    }
+
+    async getItemComments(req, res) {
+        const {id} = req.params;
+        const {page = 1, limit = 10} = req.query;
+
+        try {
+            const reviews = await this.reviewRepository.findByItemId(id, page, limit);
+            if (!reviews.length) {
+                return res.status(404).send({detail: "No comments found for this item"});
+            }
+
+            const reviewsWithUser = await Promise.all(reviews.map(async (review) => {
+                const user = await this.userRepository.findById(review.userId);
+                return {
+                    userId: review.userId,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    rating: review.rating,
+                    comment: review.comment
+                };
+            }));
+
+            return res.status(200).send({reviews: reviewsWithUser});
         } catch (err) {
             console.error(err);
             return res.status(500).send({detail: "Internal Server Error"});
@@ -145,11 +173,44 @@ class ItemController {
 
     async updateItem(req, res) {
         const {id} = req.params;
-        const updateData = req.body;
+        const {
+            title,
+            shortDescription,
+            cost,
+            size,
+            sku,
+            categories,
+            tags,
+            productDescription,
+            relatedProducts
+        } = req.body;
+
+        const images = req.files ? req.files.map(file => file.path) : null;
 
         try {
-            const updatedItem = await this.itemRepository.update(id, updateData);
-            if (!updatedItem) return res.status(404).send({detail: "Item not found"});
+            const existingItem = await this.itemRepository.findById(id);
+            if (!existingItem) {
+                return res.status(404).send({detail: "Item not found"});
+            }
+
+            const updatedData = {
+                title: title || existingItem.title,
+                shortDescription: shortDescription || existingItem.shortDescription,
+                cost: cost || existingItem.cost,
+                size: size || existingItem.size,
+                sku: sku || existingItem.sku,
+                categories: categories || existingItem.categories,
+                tags: tags || existingItem.tags,
+                productDescription: productDescription || existingItem.productDescription,
+                relatedProducts: relatedProducts || existingItem.relatedProducts,
+            };
+
+            if (images) {
+                updatedData.images = images;
+            }
+
+            const updatedItem = await this.itemRepository.update(id, updatedData);
+
             return res.status(200).send({detail: "Item updated successfully", item: updatedItem});
         } catch (err) {
             console.error(err);

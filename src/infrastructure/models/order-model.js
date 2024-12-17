@@ -3,10 +3,7 @@ import mongoose from 'mongoose';
 const OrderSchema = new mongoose.Schema({
     shippingAddress: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'AddressModel',
-        default: function () {
-            return this.billingAddress;
-        }
+        ref: 'ShippingAddressModel'
     },
     orderNotes: {
         type: String,
@@ -33,12 +30,6 @@ const OrderSchema = new mongoose.Schema({
             type: Number,
             required: true,
             min: 0
-        },
-        discountApplied: {
-            type: Number,
-            min: 0,
-            max: 100,
-            default: 0
         }
     }],
     totalAmount: {

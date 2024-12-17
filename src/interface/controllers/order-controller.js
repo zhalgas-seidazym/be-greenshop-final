@@ -1,9 +1,10 @@
+import mongoose from "mongoose";
+
 class OrderController {
-    constructor(orderRepository, addressRepository, itemRepository, discountRepository) {
+    constructor(orderRepository, addressRepository, itemRepository) {
         this.orderRepository = orderRepository;
         this.addressRepository = addressRepository;
         this.itemRepository = itemRepository;
-        this.discountRepository = discountRepository;
     }
 
 
@@ -29,19 +30,11 @@ class OrderController {
                     return res.status(400).json({detail: `Item with ID ${itemId} not found`});
                 }
 
-                const activeDiscount = await this.discountRepository.findActiveDiscount(itemId, currentDate);
                 let priceAtPurchase = item.cost;
-                let discountApplied = 0;
-
-                if (activeDiscount) {
-                    discountApplied = activeDiscount.discountPercentage;
-                    priceAtPurchase -= (priceAtPurchase * discountApplied) / 100;
-                }
-
                 totalAmount += priceAtPurchase * quantity;
 
                 processedItems.push({
-                    item: itemId, quantity, priceAtPurchase, discountApplied,
+                    item: itemId, quantity, priceAtPurchase,
                 });
             }
 
@@ -69,12 +62,31 @@ class OrderController {
                 sort: {createdAt: -1}, skip: skip, limit: limit,
             });
 
-            const totalOrders = await this.orderRepository.countDocuments({user: userId});
+            const formattedOrders = orders.map(order => {
+                return {
+                    orderId: order._id,
+                    totalAmount: order.totalAmount,
+                    shippingAddressName: order.shippingAddress.name,
+                    items: order.items.map(item => ({
+                        itemName: item.item.title,
+                        itemSize: item.item.size,
+                        quantity: item.quantity,
+                        itemCost: item.priceAtPurchase,
+                        totalItemCost: item.priceAtPurchase * item.quantity
+                    }))
+                };
+            });
+
+            const totalOrders = await this.orderRepository.countAllOrders({user: userId});
             const totalPages = Math.ceil(totalOrders / limit);
 
             return res.status(200).json({
-                orders, pagination: {
-                    totalOrders, totalPages, currentPage: page, perPage: limit
+                orders: formattedOrders,
+                pagination: {
+                    totalOrders,
+                    totalPages,
+                    currentPage: page,
+                    perPage: limit
                 }
             });
         } catch (err) {
@@ -85,14 +97,9 @@ class OrderController {
 
     async getOrderById(req, res) {
         const {id: orderId} = req.params;
-        const userId = req.user.id;
 
         try {
             const order = await this.orderRepository.findByIdWithDetails(orderId);
-            if (!order || order.user.toString() !== userId) {
-                return res.status(404).json({detail: "Order not found or access denied"});
-            }
-
             return res.status(200).json({order});
         } catch (err) {
             console.error(err);
@@ -127,12 +134,18 @@ class OrderController {
         const skip = (page - 1) * limit;
 
         const filters = {};
+
         if (status) {
             filters.status = status;
         }
+
         if (userId) {
-            filters.user = userId;
+            if (!mongoose.Types.ObjectId.isValid(userId)) {
+                return res.status(400).json({detail: "Invalid userId format"});
+            }
+            filters.user = mongoose.Types.ObjectId(userId);
         }
+
         if (startDate || endDate) {
             filters.createdAt = {};
             if (startDate) {
@@ -144,17 +157,21 @@ class OrderController {
         }
 
         try {
-            const orders = await this.orderRepository.findAllOrders(filters, {
+            const orders = await this.orderRepository.findAll(filters, {
                 sort: sort, skip: skip, limit: limit,
             });
 
-            const totalOrders = await this.orderRepository.countDocuments(filters);
+            const totalOrders = await this.orderRepository.countAllOrders(filters);
             const totalPages = Math.ceil(totalOrders / limit);
 
             return res.status(200).json({
-                orders, pagination: {
-                    totalOrders, totalPages, currentPage: page, perPage: limit,
-                }
+                orders,
+                pagination: {
+                    totalOrders,
+                    totalPages,
+                    currentPage: page,
+                    perPage: limit,
+                },
             });
         } catch (err) {
             console.error(err);

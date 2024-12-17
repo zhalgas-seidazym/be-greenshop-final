@@ -11,16 +11,16 @@ const basketController = new BasketController(basketRepository);
 router.use(isAuth);
 
 router.post("/add",  /*
-     #swagger.tags = ['addresses']
+     #swagger.tags = ['baskets']
     */(req, res) => basketController.addItemToBasket(req, res));
 router.get("/",  /*
-     #swagger.tags = ['addresses']
+     #swagger.tags = ['baskets']
     */(req, res) => basketController.getBasket(req, res));
 router.delete("/remove", /*
-     #swagger.tags = ['addresses']
+     #swagger.tags = ['baskets']
     */ (req, res) => basketController.removeItemFromBasket(req, res));
 router.delete("/clear",  /*
-     #swagger.tags = ['addresses']
+     #swagger.tags = ['baskets']
     */(req, res) => basketController.clearBasket(req, res));
 
 export default router;

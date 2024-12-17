@@ -17,16 +17,20 @@ class WishlistController {
                 });
             } else {
                 wishlist = wishlist[0];
-                const existingItem = wishlist.items.find((i) => i.item.toString() === itemId);
+                const existingItem = wishlist.items.find((i) => i.item._id.toString() === itemId);
 
-                if (!existingItem) {
-                    wishlist.items.push({item: itemId});
+                if (existingItem) {
+                    return res.status(400).json({ detail: "Item already added to wishlist" });
                 }
 
+                if (existingItem) {
+                    return res.status({"detail": "Already added"});
+                }
+                wishlist.items.push({item: itemId});
                 await wishlist.save();
             }
 
-            return res.status(200).json({detail: "Item added to wishlist successfully", wishlist});
+            return res.status(200).json({detail: "Item added to wishlist successfully"});
         } catch (err) {
             console.error(err);
             return res.status(500).json({detail: "Internal Server Error"});
@@ -37,13 +41,10 @@ class WishlistController {
         const userId = req.user.id;
 
         try {
-            const wishlist = await this.wishlistRepository.findByUserId(userId);
+            let data = await this.wishlistRepository.findByUserId(userId);
+            let {items} = data[0]
 
-            if (!wishlist || wishlist.length === 0) {
-                return res.status(404).json({detail: "Wishlist not found"});
-            }
-
-            return res.status(200).json({wishlist: wishlist[0]});
+            return res.status(200).json({items});
         } catch (err) {
             console.error(err);
             return res.status(500).json({detail: "Internal Server Error"});
@@ -62,15 +63,16 @@ class WishlistController {
             }
 
             const wishlistData = wishlist[0];
-            wishlistData.items = wishlistData.items.filter((i) => i.item.toString() !== itemId);
+            wishlistData.items = wishlistData.items.filter((i) => i.item._id.toString() !== itemId);
 
             await wishlistData.save();
-            return res.status(200).json({detail: "Item removed successfully", wishlist: wishlistData});
+            return res.status(200).json({detail: "Item removed successfully"});
         } catch (err) {
             console.error(err);
             return res.status(500).json({detail: "Internal Server Error"});
         }
     }
+
 
     async clearWishlist(req, res) {
         const userId = req.user.id;
@@ -86,7 +88,7 @@ class WishlistController {
             wishlistData.items = [];
 
             await wishlistData.save();
-            return res.status(200).json({detail: "Wishlist cleared successfully", wishlist: wishlistData});
+            return res.status(200).json({detail: "Wishlist cleared successfully"});
         } catch (err) {
             console.error(err);
             return res.status(500).json({detail: "Internal Server Error"});

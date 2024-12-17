@@ -6,6 +6,7 @@ import shippingAddressRoute from "./router/shipping-address-route.js";
 import orderRoute from "./router/order-route.js";
 import basketRoute from "./router/basket-route.js";
 import wishlistRoute from "./router/wishlist-route.js";
+import reviewRoute from "./router/review-route.js";
 
 const router = Router();
 
@@ -16,4 +17,6 @@ router.use("/items", itemRouter)
 router.use("/orders", orderRoute)
 router.use("/baskets", basketRoute)
 router.use("/wishlists", wishlistRoute)
+router.use("/reviews", reviewRoute)
+
 export default router;

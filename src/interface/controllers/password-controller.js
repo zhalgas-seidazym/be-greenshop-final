@@ -10,7 +10,8 @@ class PasswordResetController {
     }
 
     async initiatePasswordReset(req, res) {
-        const {email, frontendUrl} = req.body;
+        const {email} = req.body;
+        const {redirect_url} = req.query;
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
         if (!emailRegex.test(email)) {
@@ -31,7 +32,7 @@ class PasswordResetController {
                 900
             );
 
-            const resetLink = `${frontendUrl}?token=${resetToken}`;
+            const resetLink = `${redirect_url}?token=${resetToken}`;
 
             await this.emailService.sendPasswordResetEmail(email, resetLink);
 

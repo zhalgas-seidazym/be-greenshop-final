@@ -4,7 +4,7 @@ import {MediaDir} from "../main/config.js";
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, MediaDir);
+        cb(null, 'uploads/');
     },
     filename: (req, file, cb) => {
         const sanitizedFilename = Date.now() + '-' + path.basename(file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, ''));
@@ -29,4 +29,4 @@ const upload = multer({
     },
 });
 
-export default upload
+export {upload}

@@ -2,10 +2,10 @@ import {Router} from 'express';
 import UserController from "../controllers/user-controller.js";
 import UserRepository from "../../infrastructure/repositories/user-repository.js";
 import {isAuth} from "../middlewares.js";
-import upload from "../../utils/multer.js";
 import PasswordController from "../controllers/password-controller.js";
 import RedisService from "../../infrastructure/services/redis-service.js";
 import EmailService from "../../infrastructure/services/email-service.js";
+import {upload} from "../../utils/multer.js";
 
 const router = Router();
 
@@ -42,7 +42,7 @@ router.post('/sign-up', /*
              lastName: "Zhalgas",
              email: "zhalgas@gmail.com",
              password: "12345678",
-             client: "client"
+             role: "client"
          }
      }
     */
@@ -66,6 +66,11 @@ router.get('/verify-email', /*
     */
     (req, res) => userController.validateVerifyToken(req, res));
 
+router.get('/check-number', isAuth, /*
+     #swagger.tags = ['users']
+    */
+    (req, res) => userController.checkPhoneNumber(req, res));
+
 
 router.get("/me", isAuth,
     /*
@@ -73,23 +78,63 @@ router.get("/me", isAuth,
     */
     (req, res) => userController.profile(req, res))
 
-router.put('/update-profile', /*
-     #swagger.tags = ['users']
-     #swagger.parameters['body'] = {
-         in: 'body',
-         description: 'User data.',
-         required: true,
-         schema: {
-             firstName: "Dimash",
-             lastName: "Zhalgas",
-             phoneNumber: "+77761856565",
-             email: "zhalgas@gmail.com",
-             currentPassword: "1234567878",
-             password: "12345678",
-             profilePicture: "This upload from postman"
-         }
-     }
-    */
+router.put('/update-profile', isAuth, /*
+    #swagger.tags = ['users']
+    #swagger.consumes = ['multipart/form-data']
+    #swagger.parameters['firstName'] = {
+        in: 'formData',
+        description: 'User first name.',
+        required: false,
+        type: 'string',
+        example: 'Dimash'
+    }
+    #swagger.parameters['lastName'] = {
+        in: 'formData',
+        description: 'User last name.',
+        required: false,
+        type: 'string',
+        example: 'Zhalgas'
+    }
+    #swagger.parameters['phoneNumber'] = {
+        in: 'formData',
+        description: 'User phone number.',
+        required: false,
+        type: 'string',
+        example: '+77761856565'
+    }
+    #swagger.parameters['email'] = {
+        in: 'formData',
+        description: 'User email address.',
+        required: false,
+        type: 'string',
+        example: 'zhalgas@gmail.com'
+    }
+    #swagger.parameters['currentPassword'] = {
+        in: 'formData',
+        description: 'User current password.',
+        required: false,
+        type: 'string',
+        example: '1234567878'
+    }
+    #swagger.parameters['password'] = {
+        in: 'formData',
+        description: 'User new password.',
+        required: false,
+        type: 'string',
+        example: '12345678'
+    }
+    #swagger.parameters['profilePicture'] = {
+        in: 'formData',
+        description: 'User profile picture (upload).',
+        required: false,
+        type: 'file',
+        example: 'This upload from postman'
+    }
+    #swagger.requestBody = {
+        description: 'User data for updating profile.',
+        required: false
+    }
+*/
     upload.single('profilePicture'), async (req, res) => {
         try {
             await userController.update_profile(req, res);
@@ -116,5 +161,12 @@ router.post('/reset-password/reset',
      #swagger.tags = ['users']
     */
     async (req, res) => passwordController.resetPassword(req, res));
+
+router.post('/refresh',
+    /*
+     #swagger.tags = ['users']
+    */
+    async (req, res) => userController.refreshToken(req, res));
+
 
 export default router;

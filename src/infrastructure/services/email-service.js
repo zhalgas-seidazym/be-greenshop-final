@@ -56,7 +56,7 @@ class EmailService {
                     border-radius: 5px;
                 ">Verify Email</a>
                 <p>If you did not request this verification, please ignore this email.</p>
-                <p>This link will expire in 24 hours.</p>
+                <p>This link will expire in 15 minutes.</p>
             </div>
         `;
     }

@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 
 const Role = {
-    Admin: 'admin',
-    Client: 'client',
+    admin: 'admin',
+    client: 'client',
 };
 
 const UserSchema = new mongoose.Schema({
@@ -38,7 +38,18 @@ const UserSchema = new mongoose.Schema({
         required: true,
         minlength: [6, 'Password must be at least 6 characters'],
     },
-    role: {type: String, enum: Object.values(Role), required: true, default: Role.Client},
+    role: {
+        type: String,
+        enum: Object.values(Role),
+        required: true,
+        default: Role.client,
+        validate: {
+            validator: function (value) {
+                return Object.values(Role).includes(value);
+            },
+            message: 'Invalid role'
+        }
+    },
     verifiedUser: {
         type: Boolean,
         default: false,

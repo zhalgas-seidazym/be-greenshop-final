@@ -13,7 +13,9 @@ const isAuth = async (req, res, next) => {
         if (!user) {
             return res.status(401).json({"detail": "Not authorized"});
         }
-
+        if (!user.verifiedUser) {
+            return res.status(401).json({"detail": "User not verified"});
+        }
         req.user = user;
         next();
     } catch (err) {
@@ -36,5 +38,6 @@ const isAdmin = async (req, res, next) => {
         return res.status(403).json({detail: "Forbidden: Admin access required"});
     }
 };
+
 
 export {isAuth, isAdmin};

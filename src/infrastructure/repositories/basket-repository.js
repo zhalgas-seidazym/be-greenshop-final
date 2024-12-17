@@ -8,11 +8,11 @@ class BasketRepository extends BaseRepository {
 
     async findByUserId(userId) {
         try {
-            return await this.model.find({user: userId});
+            return await this.model.find({user: userId}).populate("items.item");
         } catch (error) {
             throw new Error(`Error finding addresses for user: ${error.message}`);
         }
     }
 }
 
-export default BaseRepository;
+export default BasketRepository;
