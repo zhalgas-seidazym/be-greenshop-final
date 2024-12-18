@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { v4 as uuidv4 } from 'uuid';
 
 class ItemController {
     constructor(itemRepository, reviewRepository, userRepository) {
@@ -14,13 +15,13 @@ class ItemController {
             shortDescription,
             cost,
             size,
-            sku,
             categories,
             tags,
             productDescription,
             relatedProducts
         } = req.body;
 
+        const sku = uuidv4()
         const images = req.files ? req.files.map(file => file.path) : [];
 
         try {
@@ -258,5 +259,6 @@ class ItemController {
         }
     }
 }
+import { format } from "express-form-data";
 
 export default ItemController;
