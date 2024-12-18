@@ -2,6 +2,7 @@ import path from "path";
 import morgan from "morgan";
 import express from 'express';
 import * as fs from "node:fs";
+import cors from "cors"
 import swaggerUi from "swagger-ui-express";
 
 
@@ -18,6 +19,7 @@ const swaggerFile = JSON.parse(fs.readFileSync(swaggerJsonPath, 'utf-8'));
 connectToDB();
 
 app.use(express.json());
+app.use(cors());
 app.use(express.urlencoded({extended: true}));
 app.use(bodyParser());
 
