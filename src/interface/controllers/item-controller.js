@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 class ItemController {
     constructor(itemRepository, reviewRepository, userRepository) {
         this.itemRepository = itemRepository;
@@ -26,7 +28,11 @@ class ItemController {
             if (existingItem) {
                 return res.status(400).send({detail: "SKU already exists"});
             }
-
+            for (const category of categories) {
+                if (!mongoose.Types.ObjectId.isValid(category)) {
+                    return res.status(400).send({detail: "Invalid type. Must be ObjectId type"});
+                }
+            }
             const newItem = await this.itemRepository.create({
                 images,
                 title,
@@ -55,7 +61,6 @@ class ItemController {
                 maxPrice = null,
                 size = null,
                 sortBy = null,
-                filter = false,
                 page = 1,
                 limit = 10
             } = req.query || {};
@@ -65,36 +70,49 @@ class ItemController {
 
             let filterQuery = {};
             let sortOption = {};
-            if (filter === 'true' || filter === true) {
-                if (category) filterQuery.categories = category;
+            if (category) filterQuery.categories = category;
 
-                if (priceFilters.minPrice !== null && priceFilters.maxPrice !== null) {
-                    filterQuery.cost = {$gte: priceFilters.minPrice, $lte: priceFilters.maxPrice};
-                } else if (priceFilters.minPrice !== undefined) {
-                    filterQuery.cost = {$gte: priceFilters.minPrice};
-                } else if (priceFilters.maxPrice !== undefined) {
-                    filterQuery.cost = {$lte: priceFilters.maxPrice};
-                }
-
-                if (size) filterQuery.size = size;
-
-                switch (sortBy) {
-                    case "price-asc":
-                        sortOption = {cost: 1};
-                        break;
-                    case "price-desc":
-                        sortOption = {cost: -1};
-                        break;
-                    case "new-arrivals":
-                        sortOption = {createdAt: -1};
-                        break;
-                    default:
-                        sortOption = {};
-                }
+            if (priceFilters.minPrice !== undefined && priceFilters.maxPrice !== undefined) {
+                filterQuery.cost = {$gte: priceFilters.minPrice, $lte: priceFilters.maxPrice};
+            } else if (priceFilters.minPrice !== undefined) {
+                filterQuery.cost = {$gte: priceFilters.minPrice};
+            } else if (priceFilters.maxPrice !== undefined) {
+                filterQuery.cost = {$lte: priceFilters.maxPrice};
             }
 
-            const items = await this.itemRepository.findWithCategoryAndTags(filterQuery, sortOption, page, limit);
+            if (size) filterQuery.size = size;
 
+            switch (sortBy) {
+                case "price-asc":
+                    sortOption = {cost: 1};
+                    break;
+                case "price-desc":
+                    sortOption = {cost: -1};
+                    break;
+                case "new-arrivals":
+                    sortOption = {createdAt: -1};
+                    break;
+                default:
+                    sortOption = {};
+            }
+
+            const offset = (page - 1) * limit;
+
+            const totalCount = await this.itemRepository.count(filterQuery);
+
+            const totalPages = Math.ceil(totalCount / limit);
+            if (offset >= totalCount) {
+                return res.status(200).json({
+                    metadata: {
+                        totalItems: totalCount,
+                        totalPages: totalPages,
+                        currentPage: parseInt(page, 10),
+                        itemsPerPage: parseInt(limit, 10),
+                    },
+                    data: [],
+                });
+            }
+            const items = await this.itemRepository.findWithCategoryAndTags(filterQuery, sortOption, offset, limit);
             const formattedItems = await Promise.all(items.map(async (item) => {
                 const reviews = await this.reviewRepository.findByItemId(item._id);
                 const reviewsCount = reviews.length;
@@ -104,6 +122,7 @@ class ItemController {
 
                 return {
                     id: item._id,
+                    images: item.images,
                     title: item.title,
                     cost: item.cost,
                     image: item.images.length > 0 ? item.images[0] : null,
@@ -112,7 +131,15 @@ class ItemController {
                 };
             }));
 
-            return res.status(200).json(formattedItems);
+            return res.status(200).json({
+                metadata: {
+                    totalItems: totalCount,
+                    totalPages: totalPages,
+                    currentPage: parseInt(page, 10),
+                    itemsPerPage: parseInt(limit, 10)
+                },
+                data: formattedItems
+            });
         } catch (err) {
             console.error(err);
             return res.status(500).json({detail: "Internal Server Error"});

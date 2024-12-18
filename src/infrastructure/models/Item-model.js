@@ -18,6 +18,8 @@ const ItemSchema = new Schema({
     tags: [{type: String, required: false}],
     productDescription: {type: String, required: true},
     relatedProducts: [{type: Schema.Types.ObjectId, ref: "Item"}]
+}, {
+    timestamps: true,
 });
 
 const ItemModel = mongoose.model("Item", ItemSchema);

@@ -143,13 +143,6 @@ router.get("/",
             enum: ['price-asc', 'price-desc', 'new-arrivals'],
             example: 'price-asc'
         }
-        #swagger.parameters['filter'] = {
-            in: 'query',
-            description: 'Apply filters.',
-            required: false,
-            type: 'boolean',
-            example: true
-        }
         #swagger.response[200] = {
             description: 'Items fetched successfully.',
             schema: { $ref: '#/definitions/Item' }
