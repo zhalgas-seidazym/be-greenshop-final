@@ -27,8 +27,8 @@ app.use("/api", globalRouter)
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerFile));
 app.use('/uploads', express.static(path.join(BaseDir, 'uploads')));
 
-app.use(morgan('combined'));
+app.use(morgan('dev'));
 
-app.listen(config.port, () => {
+app.listen(config.port || 8000, () => {
     console.log(`App listening on http://localhost:${config.port}`);
 });

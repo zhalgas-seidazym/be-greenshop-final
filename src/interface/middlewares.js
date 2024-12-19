@@ -26,8 +26,7 @@ const isAuth = async (req, res, next) => {
 
 const isAdmin = async (req, res, next) => {
     try {
-        const user = req.user;
-
+            const user = req.user;
         if (!user || user.role !== 'admin') {
             return res.status(403).json({detail: "Forbidden: Admin access required"});
         }

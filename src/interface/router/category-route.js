@@ -1,10 +1,11 @@
 import {Router} from "express";
 import CategoryController from "../controllers/category-controller.js";
 import CategoryRepository from "../../infrastructure/repositories/category-repository.js";
+import ItemRepository from "../../infrastructure/repositories/item-repository.js";
 import {isAdmin, isAuth} from "../middlewares.js";
 
 const router = Router();
-const categoryController = new CategoryController(new CategoryRepository());
+const categoryController = new CategoryController(new CategoryRepository(), new ItemRepository());
 
 router.post("/", isAuth, isAdmin,
     /*

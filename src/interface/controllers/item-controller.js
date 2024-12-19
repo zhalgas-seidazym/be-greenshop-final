@@ -10,7 +10,7 @@ class ItemController {
     }
 
     async createItem(req, res) {
-        const {
+        let {
             title,
             shortDescription,
             cost,
@@ -20,10 +20,12 @@ class ItemController {
             productDescription,
             relatedProducts
         } = req.body;
-
+        
+        if (!Array.isArray(categories)){
+            categories = [categories]
+        }
         const sku = uuidv4()
         const images = req.files ? req.files.map(file => file.path) : [];
-
         try {
             const existingItem = await this.itemRepository.findBySku(sku);
             if (existingItem) {
@@ -34,7 +36,9 @@ class ItemController {
                     return res.status(400).send({detail: "Invalid type. Must be ObjectId type"});
                 }
             }
-            const newItem = await this.itemRepository.create({
+            let newItem;
+            try{
+            newItem = await this.itemRepository.create({
                 images,
                 title,
                 shortDescription,
@@ -46,7 +50,9 @@ class ItemController {
                 productDescription,
                 relatedProducts,
             });
-
+            }catch (err) {
+                return res.status(400).send({"detail": err.message});
+            }
             return res.status(201).send({detail: "Item created successfully", item: newItem});
         } catch (err) {
             console.error(err);
@@ -82,7 +88,6 @@ class ItemController {
             }
 
             if (size) filterQuery.size = size;
-
             switch (sortBy) {
                 case "price-asc":
                     sortOption = {cost: 1};
@@ -92,6 +97,12 @@ class ItemController {
                     break;
                 case "new-arrivals":
                     sortOption = {createdAt: -1};
+                    break;
+                case "price-asc+new-arrivals":
+                    sortOption = {cost: 1, createdAt: -1};
+                    break;
+                case "price-desc+new-arrivals":
+                    sortOption = {cost: -1, createdAt: -1};
                     break;
                 default:
                     sortOption = {};
@@ -109,24 +120,30 @@ class ItemController {
                         totalPages: totalPages,
                         currentPage: parseInt(page, 10),
                         itemsPerPage: parseInt(limit, 10),
+                        maxCost: 0,
+                        minCost: 0
                     },
                     data: [],
                 });
             }
             const items = await this.itemRepository.findWithCategoryAndTags(filterQuery, sortOption, offset, limit);
+            const costs = items.map(item => item.cost);
+            const maxCost = costs.length > 0 ? Math.max(...costs) : null;
+            const minCost = costs.length > 0 ? Math.min(...costs) : null;
+
             const formattedItems = await Promise.all(items.map(async (item) => {
                 const reviews = await this.reviewRepository.findByItemId(item._id);
                 const reviewsCount = reviews.length;
                 const averageRating = reviewsCount > 0
                     ? parseFloat((reviews.reduce((sum, review) => sum + review.rating, 0) / reviewsCount).toFixed(2))
                     : 0;
-
+                if(item.images){}
                 return {
                     id: item._id,
                     images: item.images,
                     title: item.title,
                     cost: item.cost,
-                    image: item.images.length > 0 ? item.images[0] : null,
+                    images: item.images ? Array.isArray(item.images) ? item.images : [] : [],
                     reviewsCount: reviewsCount,
                     averageRating: averageRating
                 };
@@ -137,7 +154,9 @@ class ItemController {
                     totalItems: totalCount,
                     totalPages: totalPages,
                     currentPage: parseInt(page, 10),
-                    itemsPerPage: parseInt(limit, 10)
+                    itemsPerPage: parseInt(limit, 10),
+                    maxCost,
+                    minCost
                 },
                 data: formattedItems
             });
@@ -259,6 +278,5 @@ class ItemController {
         }
     }
 }
-import { format } from "express-form-data";
 
 export default ItemController;

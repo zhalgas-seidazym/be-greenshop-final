@@ -1,6 +1,7 @@
 class CategoryController {
-    constructor(categoryRepository) {
+    constructor(categoryRepository, itemRepository) {
         this.categoryRepository = categoryRepository;
+        this.itemRepository = itemRepository
     }
 
     async createCategory(req, res) {
@@ -21,14 +22,37 @@ class CategoryController {
     }
 
     async getCategories(req, res) {
+        const { itemName, size } = req.query;
+    
         try {
             const categories = await this.categoryRepository.getAllCategories();
-            return res.status(200).send({ categories });
+    
+            const formattedCategories = await Promise.all(
+                categories.map(async (category) => {
+                    const filterQuery = {
+                        categories: category._id,
+                        ...(itemName && { title: new RegExp(itemName, "i") }),
+                        ...(size && { size }),
+                    };
+    
+                    const itemQuantity = await this.itemRepository.count(filterQuery);
+    
+                    return {
+                        id: category._id,
+                        name: category.name,
+                        itemQuantity,
+                    };
+                })
+            );
+    
+            return res.status(200).send({ categories: formattedCategories });
         } catch (err) {
             console.error(err);
             return res.status(500).send({ detail: "Internal Server Error" });
         }
     }
+    
+
 
     async getCategoryById(req, res) {
         const { id } = req.params;

@@ -12,9 +12,10 @@ class ItemRepository extends BaseRepository {
 
     async findWithCategoryAndTags(filters, options, skip, limit) {
         return this.model
-            .find(filters, options)
+            .find(filters)
             .populate("categories")
             .select("-__v")
+            .sort(options)
             .skip(skip)
             .limit(limit);
     }
