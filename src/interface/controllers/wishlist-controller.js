@@ -41,8 +41,9 @@ class WishlistController {
         const userId = req.user.id;
 
         try {
-            let data = await this.wishlistRepository.findByUserId(userId);
-            let {items} = data[0]
+            let data = await this.wishlistRepository.findByUserId(userId);            
+            let {items} = data[0] ? data[0] : {items: []};
+            
 
             return res.status(200).json({items});
         } catch (err) {
