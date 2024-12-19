@@ -63,6 +63,8 @@ class ItemController {
     async getItems(req, res) {
         try {
             const {
+                query = null,
+                sku = null,
                 category = null,
                 minPrice = null,
                 maxPrice = null,
@@ -78,6 +80,10 @@ class ItemController {
             let filterQuery = {};
             let sortOption = {};
             if (category) filterQuery.categories = category;
+
+            if(sku) filterQuery.sku = sku;
+
+            if(query) filterQuery.title = { $regex: query, $options: "i" };
 
             if (priceFilters.minPrice !== undefined && priceFilters.maxPrice !== undefined) {
                 filterQuery.cost = {$gte: priceFilters.minPrice, $lte: priceFilters.maxPrice};

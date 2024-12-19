@@ -1081,6 +1081,16 @@
         "description": "Retrieve a list of all available items.",
         "parameters": [
           {
+            "name": "query",
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "sku",
+            "in": "query",
+            "type": "string"
+          },
+          {
             "name": "page",
             "in": "query",
             "type": "string"
