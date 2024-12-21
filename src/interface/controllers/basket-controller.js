@@ -10,17 +10,18 @@ class BasketController {
         try {
             let basket = await this.basketRepository.findByUserId(userId);
 
-            if (!basket || basket.length === 0) {
+            if (!basket[0]) {
+                 
                 basket = await this.basketRepository.create({
                     user: userId,
                     items: [{item: itemId, quantity}],
                 });
             } else {
                 basket = basket[0];
-                const existingItem = basket.items.find((i) => i.item.toString() === itemId);
+                const existingItem = basket.items.find((i) => i.item.id.toString() == itemId);
 
                 if (existingItem) {
-                    existingItem.quantity += quantity;
+                    existingItem.quantity = parseInt(existingItem.quantity) + parseInt(quantity);
                 } else {
                     basket.items.push({item: itemId, quantity});
                 }
@@ -63,7 +64,7 @@ class BasketController {
             }
 
             const basketData = basket[0];
-            basketData.items = basketData.items.filter((i) => i.item.toString() !== itemId);
+            basketData.items = basketData.items.filter((i) => i.item.id.toString() !== itemId);
 
             await basketData.save();
             return res.status(200).json({detail: "Item removed successfully", basket: basketData});

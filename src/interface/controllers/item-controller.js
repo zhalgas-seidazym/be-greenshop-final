@@ -104,14 +104,8 @@ class ItemController {
                 case "new-arrivals":
                     sortOption = {createdAt: -1};
                     break;
-                case "price-asc+new-arrivals":
-                    sortOption = {cost: 1, createdAt: -1};
-                    break;
-                case "price-desc+new-arrivals":
-                    sortOption = {cost: -1, createdAt: -1};
-                    break;
                 default:
-                    sortOption = {};
+                    sortOption = {cost: 1};
             }
 
             const offset = (page - 1) * limit;

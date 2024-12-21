@@ -68,8 +68,11 @@ class OrderController {
                     totalAmount: order.totalAmount,
                     shippingAddressName: order.shippingAddress.name,
                     items: order.items.map(item => ({
+                        id: item.item.id,
                         itemName: item.item.title,
                         itemSize: item.item.size,
+                        images: item.item.images,
+                        sku: item.item.sku,
                         quantity: item.quantity,
                         itemCost: item.priceAtPurchase,
                         totalItemCost: item.priceAtPurchase * item.quantity
